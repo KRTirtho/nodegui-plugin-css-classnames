@@ -110,6 +110,9 @@ body {
 	width: 100%;
 	position: fixed
 }
+.bottom-nav:hover{
+	bottom: 50%;
+}
 .top-bar {
 	color: var(--white);
 	text-align: center;
