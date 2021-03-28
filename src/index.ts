@@ -13,16 +13,29 @@ function filterRules(rules: Rule[]) {
 function filterDeclarations(declarations: Declaration[]) {
   return declarations.filter((declaration) => declaration.type === "declaration" && declaration.property && declaration.value);
 }
-
+const pseudoPattern = /:{1,2}\w*/gi;
 export class Css {
   protected rules?: Rule[];
-
   constructor(stylesheet: string) {
     this.rules = filterRules(css.parse(stylesheet).stylesheet?.rules ?? []);
   }
 
   public get stylesheet() {
     return this.rules;
+  }
+
+  categorizePseudoSelectors(rules: Rule[]): { [key: string]: Rule[] } {
+    let pseudoObj: { [key: string]: Rule[] } = {};
+    for (const rule of rules) {
+      const safeSelectors = rule.selectors?.filter((selector) => /:{1,2}\w*/gi.test(selector));
+      for (const selector of safeSelectors ?? []) {
+        const pseudoElements = selector.match(pseudoPattern)?.join("");
+        if (pseudoElements) {
+          pseudoObj[pseudoElements] = [...(pseudoObj[pseudoElements] ?? []), rule];
+        }
+      }
+    }
+    return pseudoObj;
   }
 
   /**
@@ -43,7 +56,6 @@ export class Css {
     for (const rule of internalRules ?? []) {
       const safeSelectors: string[] = [];
       const pseudoSelectors: string[] = [];
-      const pseudoPattern = /:\w*/g;
 
       for (const selector of rule.selectors ?? []) {
         if (pseudoPattern.test(selector)) {
@@ -62,23 +74,31 @@ export class Css {
         validPseudoRules.push(rule);
       }
     }
+    const categorizedPseudoRules = this.categorizePseudoSelectors(validPseudoRules);
     let declarations: Declaration[] = [];
     for (const rule of validRules) {
       const filteredDeclarations = filterDeclarations(rule.declarations ?? []);
       declarations = [...declarations, ...filteredDeclarations];
     }
-    let pseudoDeclarations: Declaration[] = [];
-    for (const rule of validPseudoRules) {
-      const filteredDeclarations = filterDeclarations(rule.declarations ?? []);
-      pseudoDeclarations = [...pseudoDeclarations, ...filteredDeclarations];
-    }
+
+    let categorizedPseudoDeclarations: string[] = [];
+
     const id = uuid();
-    const styleSheet = `#${id}{\n${declarations.map(({ property, value }) => `${property}: ${value};`).join("\n")}\n}\n#${id}-pseudo{\n${pseudoDeclarations
-      .map(({ property, value }) => `${property}: ${value};`)
-      .join("\n")}\n}`;
+    for (const category in categorizedPseudoRules) {
+      let pseudoDeclarations: Declaration[] = [];
+      // now signifying the categories
+      for (const rule of categorizedPseudoRules[category]) {
+        const filteredDeclarations = filterDeclarations(rule.declarations ?? []);
+        pseudoDeclarations = [...pseudoDeclarations, ...filteredDeclarations];
+      }
+      const styles = pseudoDeclarations.map(({ property, value }) => `${property}: ${value};`).join("\n");
+      categorizedPseudoDeclarations.push(`#${id}${category}{\n${styles}\n}`);
+    }
+
+    const styleSheet = `#${id}{\n${declarations.map(({ property, value }) => `${property}: ${value};`).join("\n")}\n}\n${categorizedPseudoDeclarations.join("\n")}`;
     return { styleSheet, id };
   }
 }
 
 const x = new Css(importedCss);
-console.log(x.styleByClass("bottom-nav"));
+console.log(x.styleByClass("link-danger link-dark ratio"));
