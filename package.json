@@ -2,9 +2,13 @@
   "name": "nodegui-plugin-css-classnames",
   "version": "0.0.1",
   "description": "A nodegui plugin that enables using css classnames with nodegui widgets",
-  "main": "lib/index.ts",
+  "main": "lib/index.js",
+  "files": [
+    "lib/"
+  ],
   "scripts": {
-    "start": "nodemon -e ts -w src/ -x 'ts-node src/index.ts'"
+    "start": "nodemon -e ts -w src/ -x 'ts-node src/index.ts'",
+    "demo": "nodemon -w src/demo.ts -x 'ts-node src/demo.ts'"
   },
   "keywords": [
     "nodegui",

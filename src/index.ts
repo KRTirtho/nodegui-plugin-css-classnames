@@ -1,18 +1,7 @@
 import css, { Declaration, Rule } from "css";
-import fs from "fs";
-import path from "path";
 import { v4 as uuid } from "uuid";
+import { filterDeclarations, filterRules } from "./util/filters";
 
-const cssFilePath = path.join("assets", "test.css");
-const importedCss = fs.readFileSync(cssFilePath, "utf-8");
-
-function filterRules(rules: Rule[]) {
-  return rules.filter((rule: Rule) => rule.type === "rule" && rule.selectors && rule.declarations) as Rule[];
-}
-
-function filterDeclarations(declarations: Declaration[]) {
-  return declarations.filter((declaration) => declaration.type === "declaration" && declaration.property && declaration.value);
-}
 const pseudoPattern = /:{1,2}\w*/gi;
 export class Css {
   protected rules?: Rule[];
@@ -40,7 +29,7 @@ export class Css {
 
   /**
    * Get styles with a space separated class list
-   * @param extraStyleStr inject extra styles to the style
+   * @param extraStyleStr inject extra styles to the stylesheet
    */
   styleByClass(classes: string, extraStyleStr?: string): { styleSheet: string; id: string } {
     let extraStyle: Rule[] = [];
@@ -99,6 +88,3 @@ export class Css {
     return { styleSheet, id };
   }
 }
-
-const x = new Css(importedCss);
-console.log(x.styleByClass("link-danger link-dark ratio"));
